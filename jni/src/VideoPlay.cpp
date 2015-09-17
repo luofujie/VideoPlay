@@ -13,7 +13,7 @@ extern "C"
 	}
 	int Init(JNIEnv* env,jobject obj)
 	{
-		//av_register_all();
+		av_register_all();
 		return 0;
 	}
 }
