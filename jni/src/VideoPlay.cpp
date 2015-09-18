@@ -4,6 +4,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavutil/log.h"
+int add(int x,int y);
 extern "C"
 {
 

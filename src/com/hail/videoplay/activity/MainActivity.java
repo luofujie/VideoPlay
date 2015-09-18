@@ -12,5 +12,6 @@ public class MainActivity extends Activity{
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
 		mPlay.Test();
+		mPlay.Init();
 	}
 }
