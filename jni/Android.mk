@@ -12,15 +12,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
 
 LOCAL_SRC_FILES := src/Main.cpp \
 	src/VideoPlay.cpp \
-	src/JNILoad.cpp \
-	lib/libavcodec.a \
-	lib/libavdevice.a  \
-	lib/libavfilter.a \
-	lib/libavformat.a \
- 	lib/libavutil.a \
-	lib/libpostproc.a \
-	lib/libswresample.a \
-	lib/libswscale.a
+	src/JNILoad.cpp 
 LOCAL_SHARED_LIBRARIES := ffmpeg
 LOCAL_LDLIBS := -llog -landroid
 

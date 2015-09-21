@@ -3,7 +3,9 @@
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="com.android.toolchain.gcc.352644987">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.android.toolchain.gcc.352644987" moduleId="org.eclipse.cdt.core.settings" name="Default">
-				<externalSettings/>
+				<externalSettings>
+					<externalSetting/>
+				</externalSettings>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -20,7 +22,7 @@
 					<folderInfo id="com.android.toolchain.gcc.352644987.835414407" name="/" resourcePath="">
 						<toolChain id="com.android.toolchain.gcc.1707428068" name="com.android.toolchain.gcc" superClass="com.android.toolchain.gcc">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF" id="com.android.targetPlatform.1657298958" isAbstract="false" superClass="com.android.targetPlatform"/>
-							<builder arguments="NDK_DEBUG=1" autoBuildTarget="" cleanBuildTarget="clean" command="ndk-build" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="com.android.builder.671682602" incrementalBuildTarget="" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Android Builder" superClass="com.android.builder">
+							<builder autoBuildTarget="" buildPath="${workspace_loc:/VideoPlay}/Default" cleanBuildTarget="clean" command="ndk-build" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="com.android.builder.671682602" incrementalBuildTarget="" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Android Builder" superClass="com.android.builder">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="obj"/>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="libs"/>
