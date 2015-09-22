@@ -1,5 +1,5 @@
-#ifndef JNILOAD_H_
-#define JNILOAD_H_
+#ifndef JNI_LOAD_H_
+#define JNI_LOAD_H_
 
 #include <jni.h>
 

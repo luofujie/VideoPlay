@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "VideoPlay.h"
+#include "PlayNative.h"
 /**
  * JNI registration.
  */

@@ -11,8 +11,10 @@ LOCAL_MODULE := VideoPlay
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
 
 LOCAL_SRC_FILES := src/Main.cpp \
-	src/VideoPlay.cpp \
-	src/JNILoad.cpp 
+	src/PlayNative.cpp \
+	src/JNILoad.cpp \
+	src/VideoPlay.cpp
+	
 LOCAL_SHARED_LIBRARIES := ffmpeg
 LOCAL_LDLIBS := -llog -landroid
 

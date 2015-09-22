@@ -1,17 +1,19 @@
 package com.hail.videoplay.activity;
 
-import com.hail.videoplay.jni.VideoPlayNative;
-
 import android.app.Activity;
 import android.os.Bundle;
+import android.widget.LinearLayout;
 
 public class MainActivity extends Activity{
-	VideoPlayNative mPlay = new VideoPlayNative();
+	PlayView playview = null;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
-		mPlay.Test();
-		mPlay.Init();
+		playview = new PlayView(this);
+		LinearLayout linearlayout = new LinearLayout(this);
+		LinearLayout.LayoutParams layoutParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,600);
+		linearlayout.addView(playview,layoutParam);
+		setContentView(linearlayout);
 	}
 }
