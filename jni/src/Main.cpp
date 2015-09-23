@@ -10,7 +10,6 @@ RegisterFunc g_funcs[] =
 
 int RegisterAllNativeMethods(JNIEnv *env)
 {
-
 	//注册所有类的native函数
 	int nRet = JNI_ERR;
 	for (int i = 0; i < sizeof(g_funcs) / sizeof(RegisterFunc); i++)

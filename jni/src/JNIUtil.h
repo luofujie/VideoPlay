@@ -15,6 +15,8 @@ public:
 	~JNIUtil();
 	JNIEnv* GetJNIEnv();
 	void Detach();
+	char* Jstring2String(jstring jstr);
+	jstring String2Jstring(const char* str);
 private:
 	static JavaVM* m_sJVM;
 public:

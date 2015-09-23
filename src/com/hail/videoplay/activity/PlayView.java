@@ -25,7 +25,6 @@ public class PlayView extends SurfaceView implements SurfaceHolder.Callback{
 		holder.addCallback(this);
 		mContext = context;
 		mNative = new PlayNative();
-		mNative.Test();
 	}
 	public PlayView(Context context,AttributeSet attrs)
 	{
@@ -53,9 +52,22 @@ public class PlayView extends SurfaceView implements SurfaceHolder.Callback{
 		Log.i(TAG, "surfaceDestroyed");
 		mNative.Destroye();
 	}
-	public Boolean openFile(String path)
+	public int openVideoFile(String path)
 	{
 		filePath = path;
-		return true;
+		return 0;
+	}
+	public void Play()
+	{
+		mNative.Open("/sdcard/Test/mv.mp4");
+		mNative.Play();
+	}
+	public void Pause()
+	{
+		mNative.Pause();
+	}
+	public void Stop()
+	{
+		mNative.Stop();
 	}
 }

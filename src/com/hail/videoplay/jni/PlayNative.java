@@ -11,7 +11,6 @@ public class PlayNative {
     	System.loadLibrary("VideoPlay");
 
 	}
-	public native void Test();
 	public native int Init(Surface surface);
 	public native int Open(String path);
 	public native void Play();
