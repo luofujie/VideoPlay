@@ -13,7 +13,8 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
 LOCAL_SRC_FILES := src/Main.cpp \
 	src/PlayNative.cpp \
 	src/JNILoad.cpp \
-	src/VideoPlay.cpp
+	src/VideoPlay.cpp \
+	src/JNIUtil.cpp
 	
 LOCAL_SHARED_LIBRARIES := ffmpeg
 LOCAL_LDLIBS := -llog -landroid

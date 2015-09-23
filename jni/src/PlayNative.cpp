@@ -1,9 +1,5 @@
-#include <jni.h>
-#include <android/native_window_jni.h>
-#include <android/native_window.h>
-#include "Stdafx.h"
 #include "JNILoad.h"
-ANativeWindow* gPlayView;
+#include "JNIUtil.h"
 extern "C"
 {
 	void Test(JNIEnv* env, jobject obj)
@@ -12,28 +8,33 @@ extern "C"
 	}
 	int Init(JNIEnv* env, jobject obj, jobject surface)
 	{
-		gPlayView = ANativeWindow_fromSurface(env, surface);
-		if(gPlayView == NULL)
-		{
-			LOGE("Get ANativeWindow ERROR!");
-			return -1;
-		}
-		LOGI("init ANativeWindow success!");
 		return 0;
 	}
-	void Destroye()
+	void Destroye(JNIEnv* env, jobject obj)
 	{
-		ANativeWindow_release(gPlayView);
-		gPlayView = NULL;
+	}
+	int Open(JNIEnv* env, jobject obj,jstring path)
+	{
+		return 0;
+	}
+	void Play(JNIEnv* env, jobject obj)
+	{
+	}
+	void Pause(JNIEnv* env, jobject obj)
+	{
+	}
+	void Stop(JNIEnv* env, jobject obj)
+	{
 	}
 }
 const char VideoPlayClassName[] = "com/hail/videoplay/jni/PlayNative";
-static JNINativeMethod VideoPlayMethods[] = {
+static JNINativeMethod VideoPlayMethods[] =
+	{
 		{ "Test", "()V", (void*) Test },
-		{"Init", "(Landroid/view/Surface;)I", (void*) Init },
-		{ "Destroye", "()V", (void*) Destroye }
-	};
-int RegisterVideoPlayMethods(JNIEnv *env) {
+		{ "Init", "(Landroid/view/Surface;)I", (void*) Init },
+		{ "Destroye", "()V", (void*) Destroye } };
+int RegisterVideoPlayMethods(JNIEnv *env)
+{
 	return jniRegisterNativeMethods(env, VideoPlayClassName, VideoPlayMethods,
 			sizeof(VideoPlayMethods) / sizeof(JNINativeMethod));
 }

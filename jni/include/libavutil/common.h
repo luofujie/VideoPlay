@@ -26,6 +26,14 @@
 #ifndef AVUTIL_COMMON_H
 #define AVUTIL_COMMON_H
 
+
+
+
+
+#ifndef   UINT64_C
+#define   UINT64_C(value)__CONCAT(value,ULL)
+#endif
+
 #if defined(__cplusplus) && !defined(__STDC_CONSTANT_MACROS) && !defined(UINT64_C)
 #error missing -D__STDC_CONSTANT_MACROS / #define __STDC_CONSTANT_MACROS
 #endif
