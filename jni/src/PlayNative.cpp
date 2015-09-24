@@ -1,6 +1,7 @@
 #include "JNILoad.h"
 #include "JNIUtil.h"
 #include "VideoPlay.h"
+#include <pthread.h>
 extern "C"
 {
 	int Init(JNIEnv* env, jobject obj, jobject surface)
@@ -28,11 +29,17 @@ extern "C"
 		LOGI("~~~~~~~~~~~~~Open end!~~~~~~~~~~~~");
 		return 0;
 	}
+	void *PlayThread(void *args)
+	{
+		VideoPlay& video = VideoPlay::GetObject();
+		video.Play();
+	    return NULL;
+	}
 	void Play(JNIEnv* env, jobject obj)
 	{
 		LOGI("---------------Play!--------------");
-		VideoPlay& video = VideoPlay::GetObject();
-		video.Play();
+		pthread_t pid;
+		pthread_create(&pid,NULL,PlayThread,NULL);
 		LOGI("~~~~~~~~~~~~~Play end!~~~~~~~~~~~~");
 
 	}
