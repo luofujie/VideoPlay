@@ -17,6 +17,5 @@ LOCAL_SRC_FILES := src/Main.cpp \
 	src/JNIUtil.cpp
 	
 LOCAL_SHARED_LIBRARIES := ffmpeg
-LOCAL_LDLIBS := -llog -landroid
-
+LOCAL_LDLIBS := -llog -landroid -lOpenSLES 
 include $(BUILD_SHARED_LIBRARY)

@@ -2,6 +2,8 @@
 #define VIDEO_PLAY
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
 extern "C"
 {
 #include "libavcodec/avcodec.h"
@@ -9,6 +11,7 @@ extern "C"
 #include "libavutil/log.h"
 #include "libavutil/frame.h"
 #include "libswscale/swscale.h"
+#include "libswresample/swresample.h"
 }
 class VideoPlay
 {
@@ -16,7 +19,7 @@ class VideoPlay
 private:
 	VideoPlay();
 	VideoPlay(const VideoPlay& play);
-	VideoPlay & operator = (const VideoPlay &);
+	VideoPlay & operator =(const VideoPlay &);
 public:
 	static inline VideoPlay& GetObject()
 	{
@@ -24,7 +27,7 @@ public:
 		return Play;
 	}
 	~VideoPlay();
-	int Init(jobject play,jobject surface);
+	int Init(jobject play, jobject surface);
 	int OpenFile(const char* path);
 	void Play();
 	void Pause();
@@ -35,6 +38,16 @@ private:
 	ANativeWindow* m_nativeWindow;
 	bool m_bInit;
 	AVFormatContext *m_pFormatCtx;
+	AVCodecContext *m_pVideoCodecCtx;
+	AVCodec *m_pVideoCodec;
+	AVCodecID m_videoCodeID;
+	AVCodecContext *m_pAudioCodecCtx;
+	AVCodec *m_pAudioCodec;
+	AVCodecID m_audioCodeID;
+	int m_videoindex;
+	int m_audioindex;
+	int m_nWidth;
+	int m_height;
 };
 #endif
 
