@@ -29,17 +29,12 @@ extern "C"
 		LOGI("~~~~~~~~~~~~~Open end!~~~~~~~~~~~~");
 		return 0;
 	}
-	void *PlayThread(void *args)
-	{
-		VideoPlay& video = VideoPlay::GetObject();
-		video.Play();
-	    return NULL;
-	}
+
 	void Play(JNIEnv* env, jobject obj)
 	{
 		LOGI("---------------Play!--------------");
-		pthread_t pid;
-		pthread_create(&pid,NULL,PlayThread,NULL);
+		VideoPlay& video = VideoPlay::GetObject();
+		video.Play();
 		LOGI("~~~~~~~~~~~~~Play end!~~~~~~~~~~~~");
 
 	}

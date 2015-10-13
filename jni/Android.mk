@@ -14,7 +14,8 @@ LOCAL_SRC_FILES := src/Main.cpp \
 	src/PlayNative.cpp \
 	src/JNILoad.cpp \
 	src/VideoPlay.cpp \
-	src/JNIUtil.cpp
+	src/JNIUtil.cpp \
+	src/AudioPlay.cpp
 	
 LOCAL_SHARED_LIBRARIES := ffmpeg
 LOCAL_LDLIBS := -llog -landroid -lOpenSLES 

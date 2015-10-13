@@ -2,8 +2,10 @@
 #define VIDEO_PLAY
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
-#include <SLES/OpenSLES.h>
-#include <SLES/OpenSLES_Android.h>
+#include <pthread.h>
+#include <queue>
+#include "AudioPlay.h"
+using namespace std;
 extern "C"
 {
 #include "libavcodec/avcodec.h"
@@ -13,6 +15,10 @@ extern "C"
 #include "libswscale/swscale.h"
 #include "libswresample/swresample.h"
 }
+enum PlayState
+{
+	State_Stop, State_Pause, State_Playing
+};
 class VideoPlay
 {
 
@@ -34,6 +40,13 @@ public:
 	void Stop();
 	void Destroye();
 private:
+	static const int MAX_BUFF_SIZE = 128;
+	void Decode();
+	void PlayAudioVideo();
+	static void *DecodeThread(void *args);
+	static void* PlayThread(void *args);
+	static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context);
+private:
 	jobject m_playNative;
 	ANativeWindow* m_nativeWindow;
 	bool m_bInit;
@@ -48,6 +61,17 @@ private:
 	int m_audioindex;
 	int m_nWidth;
 	int m_height;
+
+	pthread_t m_decodeThreadID;
+	pthread_t m_playThreadID;
+	queue<int> m_videoBuff;
+	queue<int> m_audioBuff;
+	int m_audioLen;
+	PlayState m_eState;
+	pthread_mutex_t m_mutex;
+	int m_ptm;
+	bool m_bDecodeFinish;
+	bool m_audioempty;
 };
 #endif
 

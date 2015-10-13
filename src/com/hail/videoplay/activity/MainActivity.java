@@ -21,6 +21,7 @@ public class MainActivity extends Activity{
 		LinearLayout.LayoutParams layoutParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT);
 		linearlayout.addView(playview,layoutParam);
 		Button btnPlay = (Button) findViewById(R.id.btn_play);
+		playview.openVideoFile("/sdcard/Test/mv.mp4");
 		btnPlay.setOnClickListener(new OnClickListener() {
 
 			@Override
