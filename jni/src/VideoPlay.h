@@ -3,6 +3,7 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <queue>
 #include "AudioPlay.h"
 using namespace std;
@@ -49,7 +50,6 @@ private:
 private:
 	jobject m_playNative;
 	ANativeWindow* m_nativeWindow;
-	bool m_bInit;
 	AVFormatContext *m_pFormatCtx;
 	AVCodecContext *m_pVideoCodecCtx;
 	AVCodec *m_pVideoCodec;
@@ -62,16 +62,34 @@ private:
 	int m_nWidth;
 	int m_height;
 
+
+
 	pthread_t m_decodeThreadID;
 	pthread_t m_playThreadID;
 	queue<int> m_videoBuff;
 	queue<int> m_audioBuff;
-	int m_audioLen;
 	PlayState m_eState;
 	pthread_mutex_t m_mutex;
 	int m_ptm;
 	bool m_bDecodeFinish;
-	bool m_audioempty;
+
+	//线程同步异步操作
+	sem_t semPlay;
+	//视频处理消费者生产者
+	sem_t semVideoEmpty; // 同步信号量， 当满了时阻止生产者放产品
+	sem_t semVideoFull;   // 同步信号量， 当没产品时阻止消费者消费
+	pthread_mutex_t mutexVideo;   // 互斥信号量， 一次只有一个线程访问缓冲
+
+	AudioPlay& m_audioPlay;
+	int m_audioLen;
+//	//音频输出参数
+//	uint64_t out_channel_layout;
+//	int out_nb_samples;
+//	AVSampleFormat out_sample_fmt;
+//	int out_sample_rate;
+//	int out_buffer_size;
+//	int out_channels;
+
 };
 #endif
 

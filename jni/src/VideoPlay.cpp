@@ -3,22 +3,24 @@
 #include "JNIUtil.h"
 #include "VideoPlay.h"
 
-#include <semaphore.h>
 #include <assert.h>
 VideoPlay::~VideoPlay()
 {
 }
-VideoPlay::VideoPlay()
+VideoPlay::VideoPlay() :
+		m_audioPlay(AudioPlay::GetObject())
 {
+	m_playThreadID = -1;
+	m_decodeThreadID = -1;
 	m_playNative = NULL;
 	m_nativeWindow = NULL;
-	m_bInit = false;
 	m_pFormatCtx = NULL;
 	m_pVideoCodecCtx = NULL;
 	m_pVideoCodec = NULL;
 	m_height = 0;
 	m_eState = State_Stop;
-	m_audioempty = true;
+	m_decodeThreadID = -1;
+	m_playThreadID = -1;
 }
 int VideoPlay::Init(jobject play, jobject surface)
 {
@@ -31,8 +33,12 @@ int VideoPlay::Init(jobject play, jobject surface)
 		LOGE("Get ANativeWindow ERROR!");
 		return -1;
 	}
-	LOGI("init ANativeWindow success!");
+
 	av_register_all();
+	sem_init(&semVideoEmpty, 0, MAX_BUFF_SIZE);
+	sem_init(&semVideoFull, 0, 0);
+	sem_init(&semPlay, 0, 0);
+	pthread_mutex_init(&mutexVideo, NULL);
 	return 0;
 }
 
@@ -113,32 +119,12 @@ int VideoPlay::OpenFile(const char* path)
 			WINDOW_FORMAT_RGBX_8888);
 	return 0;
 }
-sem_t semPlay;
-//视频处理消费者生产者
-sem_t semVideoEmpty; // 同步信号量， 当满了时阻止生产者放产品
-sem_t semVideoFull;   // 同步信号量， 当没产品时阻止消费者消费
-pthread_mutex_t mutexVideo;   // 互斥信号量， 一次只有一个线程访问缓冲
-
-//音频处理消费者生产者
-sem_t semAudioEmpty; // 同步信号量， 当满了时阻止生产者放产品
-sem_t semAudioFull;   // 同步信号量， 当没产品时阻止消费者消费
-pthread_mutex_t mutexAudio;   // 互斥信号量， 一次只有一个线程访问缓冲
-
 void VideoPlay::Play()
 {
 	LOGI("m_eState=%d", m_eState);
 	if (m_eState == State_Stop)
 	{
-		sem_init(&semVideoEmpty, 0, MAX_BUFF_SIZE);
-		sem_init(&semVideoFull, 0, 0);
-		sem_init(&semAudioEmpty, 0, MAX_BUFF_SIZE);
-		sem_init(&semAudioFull, 0, 0);
-		sem_init(&semPlay, 0, 0);
-		m_decodeThreadID = -1;
-		m_playThreadID = -1;
 		m_eState = State_Playing;
-		pthread_mutex_init(&mutexVideo, NULL);
-		pthread_mutex_init(&mutexAudio, NULL);
 		pthread_create(&m_decodeThreadID, NULL, DecodeThread, this);
 		pthread_create(&m_playThreadID, NULL, PlayThread, this);
 	}
@@ -151,14 +137,18 @@ void VideoPlay::Play()
 
 void* VideoPlay::PlayThread(void *args)
 {
+	LOGI("PlayThread begin!");
 	VideoPlay* play = (VideoPlay*) args;
 	play->PlayAudioVideo();
+	LOGI("PlayThread exit!");
 	pthread_exit(0);
 }
 void* VideoPlay::DecodeThread(void *args)
 {
+	LOGI("DecodeThread begin!");
 	VideoPlay* play = (VideoPlay*) args;
 	play->Decode();
+	LOGI("DecodeThread exit!");
 	pthread_exit(0);
 }
 void VideoPlay::PlayAudioVideo()
@@ -173,6 +163,8 @@ void VideoPlay::PlayAudioVideo()
 		{
 			sem_wait(&semPlay);
 		}
+		else if (m_eState == State_Stop)
+			break;
 		start = clock();
 		ANativeWindow_Buffer windowBuffer;
 		if (ANativeWindow_lock(m_nativeWindow, &windowBuffer, NULL) < 0)
@@ -216,26 +208,16 @@ void VideoPlay::PlayAudioVideo()
 		}
 	}
 
-	//	createBufferQueueAudioPlayer(44100, m_pAudioCodecCtx->channels,
-	//					SL_PCMSAMPLEFORMAT_FIXED_16);
-	//	(*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue,
-	//			audio_buffer, audio_buffer_size);
-	//	createEngine();
 }
-extern SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue;
-static const char tmp[] =
-#include "android_clip.h"
-;
-#define MAX_AUDIO_FRAME_SIZE 192000
 void VideoPlay::Decode()
 {
 	AVFrame *pFrameRGB = av_frame_alloc();
 	AVFrame *pFrame = av_frame_alloc();
 	AVPacket *packet = (AVPacket *) av_malloc(sizeof(AVPacket));
-	uint8_t *out_buffer;
-	out_buffer = new uint8_t[avpicture_get_size(PIX_FMT_RGB24, m_nWidth,
-			m_height)];
-	avpicture_fill((AVPicture *) pFrameRGB, out_buffer, PIX_FMT_RGB24, m_nWidth,
+	int viedeoBuffer_size = avpicture_get_size(PIX_FMT_RGB24, m_nWidth,
+			m_height);
+	uint8_t * viedeoBuffer = (uint8_t *)av_malloc(viedeoBuffer_size);
+	avpicture_fill((AVPicture *) pFrameRGB, viedeoBuffer, PIX_FMT_RGB24, m_nWidth,
 			m_height);
 	SwsContext* img_convert_ctx = sws_getContext(m_nWidth, m_height,
 			m_pVideoCodecCtx->pix_fmt, m_nWidth, m_height, PIX_FMT_RGB24,
@@ -250,12 +232,12 @@ void VideoPlay::Decode()
 	//nb_samples: AAC-1024 MP3-1152
 	int out_nb_samples = m_pAudioCodecCtx->frame_size;
 	AVSampleFormat out_sample_fmt = AV_SAMPLE_FMT_S16;
-	int out_sample_rate = 44100;
+	int out_sample_rate = m_pAudioCodecCtx->sample_rate;
 	int out_channels = av_get_channel_layout_nb_channels(out_channel_layout);
 	//Out Buffer Size
-	int out_buffer_size = av_samples_get_buffer_size(NULL, out_channels,
+	int Audiobuffer_size = av_samples_get_buffer_size(NULL, out_channels,
 			out_nb_samples, out_sample_fmt, 1);
-	out_buffer = (uint8_t *) av_malloc(MAX_AUDIO_FRAME_SIZE * 2);
+	uint8_t*Audiobuffer = (uint8_t *) av_malloc(MAX_AUDIO_FRAME_SIZE * 2);
 	//FIX:Some Codec's Context Information is missing
 	int64_t in_channel_layout;
 	struct SwrContext *au_convert_ctx;
@@ -271,24 +253,30 @@ void VideoPlay::Decode()
 	AVFrame *pAudioFrame;
 	pAudioFrame = av_frame_alloc();
 
-	m_audioLen = out_buffer_size;
-	LOGI("m_pFormatCtx->duration=%d", m_pFormatCtx->duration);
+	m_audioLen = Audiobuffer_size;
+	LOGI("m_pFormatCtx->duration=%lld", m_pFormatCtx->duration);
 	LOGI("den=%d,num=%d", m_pVideoCodecCtx->time_base.den,
 			m_pVideoCodecCtx->time_base.num);
 	m_ptm = 40000;	//av_q2d(m_pVideoCodecCtx->time_base)*1000000;
 	int flag_start = 0;
-	createEngine();
 	LOGI(" bit_rate = %d ", m_pAudioCodecCtx->bit_rate);
 	LOGI(" sample_rate = %d ", m_pAudioCodecCtx->sample_rate);
 	LOGI(" channels = %d ", m_pAudioCodecCtx->channels);
 	LOGI(" code_name = %s ", m_pAudioCodecCtx->codec->name);
 	LOGI(" block_align = %d", m_pAudioCodecCtx->block_align);
+	m_audioPlay.init();
+	m_audioPlay.createBufferQueueAudioPlayer(out_sample_rate, out_channels,
+	SL_PCMSAMPLEFORMAT_FIXED_16, bqPlayerCallback);
 	while (av_read_frame(m_pFormatCtx, packet) >= 0)
 	{
+		if (m_eState == State_Stop)
+		{
+			LOGI("STOP");
+			break;
+		}
 		int got_picture = 0;
 		if (packet->stream_index == m_videoindex)
 		{
-
 			ret = avcodec_decode_video2(m_pVideoCodecCtx, pFrame, &got_picture,
 					packet);
 			if (ret < 0)
@@ -311,7 +299,6 @@ void VideoPlay::Decode()
 				sem_post(&semVideoFull);
 			}
 		}
-
 		int AudioFinished = 0;
 		if (packet->stream_index == m_audioindex)
 		{
@@ -320,27 +307,29 @@ void VideoPlay::Decode()
 			if (ret > 0 && AudioFinished)
 			{
 
-				swr_convert(au_convert_ctx, &out_buffer, MAX_AUDIO_FRAME_SIZE,
+				swr_convert(au_convert_ctx, &Audiobuffer, MAX_AUDIO_FRAME_SIZE,
 						(const uint8_t **) pAudioFrame->data,
 						pAudioFrame->nb_samples);
 				if (flag_start == 0)
 				{
 					flag_start = 1;
-					createBufferQueueAudioPlayer(out_sample_rate, out_channels,
-					SL_PCMSAMPLEFORMAT_FIXED_16, bqPlayerCallback);
-					(*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue,
-							out_buffer, out_buffer_size);
-
+					m_audioPlay.PlayBuff(Audiobuffer, Audiobuffer_size);
 				}
 				uint8_t *tmp = (uint8_t *) av_malloc(
 				MAX_AUDIO_FRAME_SIZE * 2);
-				memcpy(tmp, out_buffer, out_buffer_size);
+				memcpy(tmp, Audiobuffer, Audiobuffer_size);
 				m_audioBuff.push((int) tmp);
 				tmp = NULL;
 			}
 		}
 	}
+	av_free(viedeoBuffer);
+	av_free(Audiobuffer);
+	sws_freeContext(img_convert_ctx);
+	swr_free(&au_convert_ctx);
 	av_frame_free(&pAudioFrame);
+	av_frame_free(&pFrameRGB);
+	av_frame_free(&pFrame);
 	av_free_packet(packet);
 	m_bDecodeFinish = true;
 	LOGI("Decode File Finish!");
@@ -349,9 +338,8 @@ void VideoPlay::Decode()
 void VideoPlay::bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq,
 		void *context)
 {
-	VideoPlay& play = VideoPlay::GetObject();
-	assert(bq == bqPlayerBufferQueue);
 	assert(NULL == context);
+	VideoPlay& play = VideoPlay::GetObject();
 	static short * buffer = NULL;
 	if (buffer != NULL)
 	{
@@ -360,6 +348,8 @@ void VideoPlay::bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq,
 	}
 	while (1)
 	{
+		if (play.m_eState == State_Stop)
+			break;
 		short *nextBuffer = NULL;
 		unsigned nextSize = 0;
 		int count = play.m_audioBuff.size();
@@ -375,11 +365,7 @@ void VideoPlay::bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq,
 			SLresult result;
 			// enqueue another buffer
 			buffer = nextBuffer;
-			result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue,
-					nextBuffer, nextSize);
-			// the most likely other result is SL_RESULT_BUFFER_INSUFFICIENT,
-			// which for this code example would indicate a programming error
-			assert(SL_RESULT_SUCCESS == result);
+			play.m_audioPlay.PlayBuff(nextBuffer, nextSize);
 			break;
 		}
 		usleep(1000);
@@ -397,12 +383,39 @@ void VideoPlay::Stop()
 }
 void VideoPlay::Destroye()
 {
+	if (m_eState != State_Stop)
+		m_eState = State_Stop;
+	void* ret;
+	sem_post(&semVideoFull);
+	sem_post(&semVideoEmpty);
+	if (m_decodeThreadID != -1)
+		pthread_join(m_decodeThreadID, &ret);
+	if (m_playThreadID != -1)
+		pthread_join(m_playThreadID, &ret);
+	sem_destroy(&semPlay);
+	sem_destroy(&semVideoEmpty);
+	sem_destroy(&semVideoFull);
+	pthread_mutex_destroy(&mutexVideo);
 	JNIUtil util;
 	JNIEnv* env = util.GetJNIEnv();
 	ANativeWindow_release(m_nativeWindow);
 	m_nativeWindow = NULL;
 	env->DeleteGlobalRef(m_playNative);
 	avformat_close_input(&m_pFormatCtx);
-	(*bqPlayerBufferQueue)->Clear(bqPlayerBufferQueue);
+	avformat_free_context(m_pFormatCtx);
+	m_audioPlay.destroy();
+
+	m_playThreadID = -1;
+	m_decodeThreadID = -1;
+	m_playNative = NULL;
+	m_nativeWindow = NULL;
+	m_pFormatCtx = NULL;
+	m_pVideoCodecCtx = NULL;
+	m_pVideoCodec = NULL;
+	m_height = 0;
+	m_eState = State_Stop;
+	m_decodeThreadID = -1;
+	m_playThreadID = -1;
+
 }
 
