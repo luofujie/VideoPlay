@@ -3,9 +3,26 @@
 #include "JNIUtil.h"
 
 JavaVM* JNIUtil::m_sJVM = NULL;
-void JNIUtil::SetJavaVm(JavaVM* vm)
+jclass JNIUtil::m_strClass = NULL;
+jmethodID JNIUtil::m_ctorID = 0;
+jmethodID JNIUtil::m_getByteID = 0;
+void JNIUtil::Init(JNIEnv* env)
 {
-	m_sJVM = vm;
+	env->GetJavaVM(&m_sJVM);
+	jclass tmp = env->FindClass("java/lang/String");
+	m_strClass = (jclass)env->NewGlobalRef(tmp);
+	m_ctorID = env->GetMethodID(m_strClass, "<init>",
+				"([BLjava/lang/String;)V");
+	m_getByteID = env->GetMethodID(m_strClass, "getBytes",
+			"(Ljava/lang/String;)[B");
+}
+void JNIUtil::CleanUp(JNIEnv* env)
+{
+	env->DeleteGlobalRef(m_strClass);
+	m_sJVM = NULL;
+	m_strClass = NULL;
+	m_getByteID =0;
+	m_ctorID = 0;
 }
 JNIUtil::JNIUtil() :m_bAttach(false)
 {
@@ -42,26 +59,25 @@ void JNIUtil::Detach()
 	}
 }
 
-char* JNIUtil::Jstring2String(jstring jstr)
+string JNIUtil::Jstring2String(jstring jstr)
 {
 	JNIEnv *env = NULL;
 	env = GetJNIEnv();
 	char* rtn = NULL;
-	jclass clsstring = env->FindClass("java/lang/String");
 	jstring strencode = env->NewStringUTF("utf-8");
-	jmethodID mid = env->GetMethodID(clsstring, "getBytes",
-			"(Ljava/lang/String;)[B");
-	jbyteArray barr = (jbyteArray) env->CallObjectMethod(jstr, mid, strencode);
+	jbyteArray barr = (jbyteArray) env->CallObjectMethod(jstr, m_getByteID, strencode);
 	jsize alen = env->GetArrayLength(barr);
 	jbyte* ba = env->GetByteArrayElements(barr, JNI_FALSE);
 	if (alen > 0)
 	{
-		rtn = (char*) malloc(alen + 1);
+		rtn = new char[alen+1];
 		memcpy(rtn, ba, alen);
 		rtn[alen] = 0;
 	}
 	env->ReleaseByteArrayElements(barr, ba, 0);
-	return rtn;
+	string strRet(rtn);
+	delete[] rtn;
+	return strRet;
 }
 
 //char* to jstring
@@ -69,11 +85,8 @@ jstring JNIUtil::String2Jstring(const char* pat)
 {
 	JNIEnv *env = NULL;
 	env = GetJNIEnv();
-	jclass strClass = env->FindClass("Ljava/lang/String;");
-	jmethodID ctorID = env->GetMethodID(strClass, "<init>",
-			"([BLjava/lang/String;)V");
 	jbyteArray bytes = env->NewByteArray(strlen(pat));
 	env->SetByteArrayRegion(bytes, 0, strlen(pat), (jbyte*) pat);
 	jstring encoding = env->NewStringUTF("utf-8");
-	return (jstring) env->NewObject(strClass, ctorID, bytes, encoding);
+	return (jstring)env->NewObject(m_strClass, m_ctorID, bytes, encoding);
 }

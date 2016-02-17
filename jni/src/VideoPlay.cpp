@@ -21,6 +21,7 @@ VideoPlay::VideoPlay() :
 	m_eState = State_Stop;
 	m_decodeThreadID = -1;
 	m_playThreadID = -1;
+
 }
 int VideoPlay::Init(jobject play, jobject surface)
 {
@@ -119,18 +120,38 @@ int VideoPlay::OpenFile(const char* path)
 			WINDOW_FORMAT_RGBX_8888);
 	return 0;
 }
+void VideoPlay::SetPlayState(PlayState State)
+{
+	if(State == m_eState)
+		return ;
+	switch(State)
+	{
+	case State_Play:
+		Play();
+		break;
+	case State_Stop:
+		Stop();
+		break;
+	case State_Pause:
+		Pause();
+		break;
+	default:
+		break;
+	}
+}
 void VideoPlay::Play()
 {
 	LOGI("m_eState=%d", m_eState);
+
 	if (m_eState == State_Stop)
 	{
-		m_eState = State_Playing;
+		m_eState = State_Play;
 		pthread_create(&m_decodeThreadID, NULL, DecodeThread, this);
 		pthread_create(&m_playThreadID, NULL, PlayThread, this);
 	}
 	else if (m_eState == State_Pause)
 	{
-		m_eState = State_Playing;
+		m_eState = State_Play;
 		sem_post(&semPlay);
 	}
 }
@@ -216,9 +237,9 @@ void VideoPlay::Decode()
 	AVPacket *packet = (AVPacket *) av_malloc(sizeof(AVPacket));
 	int viedeoBuffer_size = avpicture_get_size(PIX_FMT_RGB24, m_nWidth,
 			m_height);
-	uint8_t * viedeoBuffer = (uint8_t *)av_malloc(viedeoBuffer_size);
-	avpicture_fill((AVPicture *) pFrameRGB, viedeoBuffer, PIX_FMT_RGB24, m_nWidth,
-			m_height);
+	uint8_t * viedeoBuffer = (uint8_t *) av_malloc(viedeoBuffer_size);
+	avpicture_fill((AVPicture *) pFrameRGB, viedeoBuffer, PIX_FMT_RGB24,
+			m_nWidth, m_height);
 	SwsContext* img_convert_ctx = sws_getContext(m_nWidth, m_height,
 			m_pVideoCodecCtx->pix_fmt, m_nWidth, m_height, PIX_FMT_RGB24,
 			SWS_BICUBIC, NULL, NULL, NULL);
@@ -306,7 +327,6 @@ void VideoPlay::Decode()
 					&AudioFinished, packet);
 			if (ret > 0 && AudioFinished)
 			{
-
 				swr_convert(au_convert_ctx, &Audiobuffer, MAX_AUDIO_FRAME_SIZE,
 						(const uint8_t **) pAudioFrame->data,
 						pAudioFrame->nb_samples);
@@ -338,6 +358,7 @@ void VideoPlay::Decode()
 void VideoPlay::bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq,
 		void *context)
 {
+
 	assert(NULL == context);
 	VideoPlay& play = VideoPlay::GetObject();
 	static short * buffer = NULL;
@@ -348,8 +369,11 @@ void VideoPlay::bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq,
 	}
 	while (1)
 	{
-		if (play.m_eState == State_Stop)
+		PlayState state = play.m_eState;
+		if (state == State_Stop)
 			break;
+		if (state == State_Pause)
+			;
 		short *nextBuffer = NULL;
 		unsigned nextSize = 0;
 		int count = play.m_audioBuff.size();
@@ -373,7 +397,7 @@ void VideoPlay::bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq,
 }
 void VideoPlay::Pause()
 {
-	if (m_eState == State_Playing)
+	if (m_eState == State_Play)
 		m_eState = State_Pause;
 }
 void VideoPlay::Stop()

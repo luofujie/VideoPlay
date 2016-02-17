@@ -18,7 +18,7 @@ extern "C"
 }
 enum PlayState
 {
-	State_Stop, State_Pause, State_Playing
+	State_Stop, State_Pause, State_Play
 };
 class VideoPlay
 {
@@ -36,17 +36,18 @@ public:
 	~VideoPlay();
 	int Init(jobject play, jobject surface);
 	int OpenFile(const char* path);
+	void SetPlayState(PlayState State);
+	void Destroye();
+private:
 	void Play();
 	void Pause();
 	void Stop();
-	void Destroye();
-private:
-	static const int MAX_BUFF_SIZE = 128;
 	void Decode();
 	void PlayAudioVideo();
 	static void *DecodeThread(void *args);
 	static void* PlayThread(void *args);
-	static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context);
+	static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq,
+			void *context);
 private:
 	jobject m_playNative;
 	ANativeWindow* m_nativeWindow;
@@ -62,8 +63,6 @@ private:
 	int m_nWidth;
 	int m_height;
 
-
-
 	pthread_t m_decodeThreadID;
 	pthread_t m_playThreadID;
 	queue<int> m_videoBuff;
@@ -73,6 +72,7 @@ private:
 	int m_ptm;
 	bool m_bDecodeFinish;
 
+	static const int MAX_BUFF_SIZE = 128;
 	//线程同步异步操作
 	sem_t semPlay;
 	//视频处理消费者生产者

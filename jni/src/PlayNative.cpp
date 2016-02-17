@@ -34,7 +34,7 @@ extern "C"
 	{
 		LOGI("---------------Play!--------------");
 		VideoPlay& video = VideoPlay::GetObject();
-		video.Play();
+		video.SetPlayState(State_Play);
 		LOGI("~~~~~~~~~~~~~Play end!~~~~~~~~~~~~");
 
 	}
@@ -42,14 +42,14 @@ extern "C"
 	{
 		LOGI("---------------Pause!--------------");
 		VideoPlay& video = VideoPlay::GetObject();
-		video.Pause();
+		video.SetPlayState(State_Pause);
 		LOGI("~~~~~~~~~~~~~Pause end!~~~~~~~~~~~~");
 	}
 	void Stop(JNIEnv* env, jobject obj)
 	{
 		LOGI("---------------Stop!--------------");
 		VideoPlay& video = VideoPlay::GetObject();
-		video.Stop();
+		video.SetPlayState(State_Stop);
 		LOGI("~~~~~~~~~~~~~Stop end!~~~~~~~~~~~~");
 	}
 }
